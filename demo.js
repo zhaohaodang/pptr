@@ -3,46 +3,59 @@ const fs = require("fs");
 let limit = process.argv.pop();
 limit = parseInt(limit) || 1;
 (async function run() {
-    console.log(limit);
-    if (limit <= 0) {
-        process.exit();
-    }
-    console.log('正在注册');
-    const browser = await puppeteer.launch({
-        // headless: false,
-        args: ['--proxy-server=http=127.0.0.1:1081'],
-    });
-    const page = await browser.newPage();
-    page.setDefaultNavigationTimeout(300000);
-    // await page.goto('http://swanbc.com/app/0arLe1.html');
-    await page.setCookie({ name: 'tid', value: '112135', url: 'http://swanbc.com/', domain: '.swanbc.com' });
-    await page.goto('http://swanbc.com/login/reg.php');
-    // await page.waitForNavigation();
-    const cellphone = getMoblieNum();
-    const pwd = createPwd();
-
-    await page.evaluate((cellphone, pwd) => {
-        document.querySelector('input[name=username]').value = cellphone;
-        document.querySelector('input[name=pwd]').value = pwd;
-        document.querySelector('input[name=pwdtwo]').value = pwd;
-        document.querySelector('input[type=submit]').click();
-    }, cellphone, pwd);
-    await page.waitForNavigation();
-    const result = await page.mainFrame().$eval('.layui-m-layercont', ele => ele.innerHTML);
-    if (result.indexOf('成功') >= 0) {
-        const record = `${cellphone}/${pwd}\r\n`;
-        const filename = 'account.txt';
-        console.log('账号注册成功', record);
-        fs.appendFile(filename, record, async err => {
-            if (err) throw err;
-            // await browser.close();
-            console.log('账号保存成功', filename);
-            limit -= 1;
-            run();
+    try {
+        console.log(limit);
+        if (limit <= 0) {
+            process.exit();
+        }
+        console.log('正在注册');
+        const browser = await puppeteer.launch({
+            // headless: false,
+            args: ['--proxy-server=http=127.0.0.1:1081'],
         });
-    } else {
-        await browser.close();
-        console.log(result);
+        const page = await browser.newPage();
+        page.setDefaultNavigationTimeout(300000);
+        // await page.goto('http://swanbc.com/app/0arLe1.html');
+        // await page.setCookie({ name: 'tid', value: '112135', url: 'http://swanbc.com/', domain: '.swanbc.com' });
+        await page.setCookie({ name: 'tid', value: '140444', url: 'http://swanbc.com/', domain: '.swanbc.com' });
+        await page.goto('http://swanbc.com/login/reg.php');
+        // await page.waitForNavigation();
+        const cellphone = getMoblieNum();
+        const pwd = createPwd();
+
+        await page.evaluate((cellphone, pwd) => {
+            document.querySelector('input[name=username]').value = cellphone;
+            document.querySelector('input[name=pwd]').value = pwd;
+            document.querySelector('input[name=pwdtwo]').value = pwd;
+            document.querySelector('input[type=submit]').click();
+        }, cellphone, pwd);
+        await page.waitForNavigation();
+        const result = await page.mainFrame().$eval('.layui-m-layercont', ele => ele.innerHTML);
+        if (result.indexOf('成功') >= 0) {
+            const record = `${cellphone}/${pwd}\r\n`;
+            const filename = 'account.txt';
+            console.log('账号注册成功', record);
+            fs.appendFile(filename, record, async err => {
+                if (err) throw err;
+                // await browser.close();
+                console.log('账号保存成功', filename);
+                limit -= 1;
+                console.log('一分钟后重新注册');
+                setTimeout(function() {
+                    run();
+                }, 1000 * 60);
+
+            });
+        } else {
+            await browser.close();
+            console.log(result);
+            process.exit();
+        }
+    } catch (error) {
+        console.log('出错啦，一分钟后重试', error);
+        setTimeout(function() {
+            run();
+        }, 1000 * 60);
     }
 })();
 
